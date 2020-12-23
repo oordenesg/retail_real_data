@@ -6,6 +6,7 @@ Created on Sun Dec 20 23:28:19 2020
 """
 import pandas as pd 
 import numpy as np
+import matplotlib.pyplot as plt
 
 data = pd.read_csv("C:/Users/Oscar/Desktop/UOxford/Beacon dataset/beacon_data.csv", sep = ';')
 data.head()
@@ -25,9 +26,10 @@ for column in data:
 ### 2. Check the columns signal_type, entry_date and exit_date  
 #       when entry_date and exit_date are the same. In this case signal
 #       signal_type should be equal 4
-
+# First, I am creating a new dataset with 3 columns    
 data_noNA_dates = data[["signal_type","entry_date","exit_date"]].dropna()
 
+#Now I can check if entry_date = exit_date when signal = 4
 cases = 0
 for i in range(0,len(data_noNA_dates)):
     #cases = 0
@@ -36,7 +38,7 @@ for i in range(0,len(data_noNA_dates)):
     else:
         cases.append(0);
 cases/len(data_noNA_dates) ## output is equal to 1. With this I can confirm that the column exit_date is useless
-        
+
 
 ## Remove unuseful columns
 data = data.drop("merchant_id",axis = 1) # unique ID
@@ -44,14 +46,33 @@ data = data.drop("dongle_id",axis = 1) # unique ID
 data = data.drop("exit_date",axis = 1) # same values 
 
 
-# Duplicated values using columns from vendor_id 
+### 3. Duplicated values using columns from vendor_id 
+# I removed all the repeated values that I found
 
 duplicated_values = data.iloc[:,2:len(data.columns)].duplicated()
 data = data[duplicated_values == False]
 
 
-
-### 3. Find the transaccion with more rows
+### Optional. Find the transaccion with more rows
 ### movement unique per user_id 
 data[["subscriber_id","gtid"]].groupby(by = "subscriber_id").nunique()
 data[["subscriber_id","gtid"]].groupby(by = "subscriber_id").count()
+
+
+
+#### 4. Analsing the RSSI column.  
+# RSSI in some cases is zero for some "immediate" signal. 
+# This situation is similar for the signal "far". This column has values > 0
+
+# Check the data 
+data.boxplot(column = "rssi", by = "proximity")
+a = data[data["proximity"] == "immediate"]
+len(a[a["rssi"] == 0])/len(a)
+
+# The first idea is to remove the outliers within the far and immediate categories.
+data = data.drop(data[(data["rssi"] == 0) & (data["proximity"] == "immediate")].index)
+data = data.drop(data[(data["rssi"] >= 0) & (data["proximity"] == "far")].index)
+
+
+
+
